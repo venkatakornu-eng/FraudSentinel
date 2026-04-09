@@ -130,8 +130,18 @@ Without a key, rule-based fallback narratives are used automatically.
 
 ---
 
-## Architecture
-fraud_architecture_diagram.svg
-![Architecture Diagram](assets/fraud_architecture_diagram.svg)
+## 🏗️ System Architecture
+
+![Architecture Diagram](Images/fraud_architecture_diagram.svg)
+
+## 🔄 Data Pipeline
+
+![Data Pipeline](Images/data_pipeline.svg)
+
+## ⚙️ Model Serving Logic
+
+![Model Serving Logic](Images/model_serving_logic.svg)
+
+
 
 *FraudSentinel · Santosh Kumar · MSc Data Science · University of Leicester · 2026*
