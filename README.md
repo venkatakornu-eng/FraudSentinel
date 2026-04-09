@@ -1,7 +1,7 @@
 # 🛡 FraudSentinel — Full-Stack Analytics System
 
 **Real-Time Intelligent Fraud Detection Dashboard**  
-Gauri Kshirsagar · MSc Data Science · University of Leicester · 2026
+Venkata Santosh Kumar Kornu · MSc Data Science · University of Leicester · 2026
 
 ---
 
@@ -130,4 +130,6 @@ Without a key, rule-based fallback narratives are used automatically.
 
 ---
 
-*FraudSentinel · Gauri Kshirsagar · MSc Data Science · University of Leicester · 2026*
+## Architecture
+
+*FraudSentinel · Santosh Kumar · MSc Data Science · University of Leicester · 2026*
