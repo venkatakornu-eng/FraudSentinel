@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FraudSentinel — Risk Intelligence Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  /* ── Warm Charcoal + Amber Gold theme ── */
+  --bg0:#0e0d0b;--bg1:#181613;--bg2:#201d19;--bg3:#28241f;--bg4:#312c26;
+  --border:#3c3530;--border2:#4e463c;
+  --text:#f2e8d8;--text2:#8c7b68;--text3:#5c5044;
+  --gold:#f5c842;--gold2:#c49a1a;
+  --coral:#ff6b4a;--coral2:#cc4422;
+  --sage:#4ecb8d;--sage2:#2d9960;
+  --rose:#e8547a;--lavender:#c084fc;--sky:#60b8e8;
+  --gg:rgba(78,203,141,.13);--gr:rgba(255,107,74,.14);--ga:rgba(245,200,66,.14);--gp:rgba(192,132,252,.12);
+  --r:7px;--font:'Bricolage Grotesque',sans-serif;--mono:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg0);color:var(--text);
+  font-family:var(--font);font-size:14px;line-height:1.6;overflow-x:hidden;
+  background-image:
+    radial-gradient(ellipse 90% 60% at 15% -5%,rgba(245,200,66,.035) 0%,transparent 55%),
+    radial-gradient(ellipse 70% 50% at 85% 105%,rgba(255,107,74,.025) 0%,transparent 50%);
+}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg1)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+::-webkit-scrollbar-thumb:hover{background:var(--gold2)}
+
+/* ── Grain texture overlay ──────────────────────────────── */
+body::after{
+  content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:1;opacity:.35;
+}
+
+/* ── LAYOUT ─────────────────────────────────────────────────── */
+.shell{display:flex;min-height:100vh}
+.sidebar{
+  width:218px;min-height:100vh;background:var(--bg1);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:100
+}
+.main{margin-left:218px;flex:1;display:flex;flex-direction:column}
+
+/* ── SIDEBAR ──────────────────────────────────────────────── */
+.logo-area{padding:20px 18px 14px;border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-hex{
+  width:34px;height:34px;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  display:flex;align-items:center;justify-content:center;font-size:15px;
+  animation:hexpulse 3s ease-in-out infinite
+}
+@keyframes hexpulse{0%,100%{filter:drop-shadow(0 0 0 transparent)}50%{filter:drop-shadow(0 0 8px rgba(245,200,66,.6))}}
+.logo-words{display:flex;flex-direction:column}
+.logo-name{font-size:15px;font-weight:800;letter-spacing:.03em;color:var(--text)}
+.logo-name span{color:var(--gold)}
+.logo-tag{font-size:8px;color:var(--text3);letter-spacing:.15em;text-transform:uppercase;font-family:var(--mono);margin-top:1px}
+
+.nav-group{padding:12px 10px 4px;font-size:8px;color:var(--text3);letter-spacing:.18em;text-transform:uppercase;font-family:var(--mono)}
+.nav-item{
+  display:flex;align-items:center;gap:9px;padding:8px 14px;margin:1px 8px;
+  border-radius:var(--r);color:var(--text2);cursor:pointer;
+  transition:all .15s;font-size:12.5px;font-weight:600;
+  border:1px solid transparent;position:relative;user-select:none
+}
+.nav-item:hover{background:var(--bg3);color:var(--text);border-color:var(--border2)}
+.nav-item.active{
+  background:linear-gradient(90deg,rgba(245,200,66,.1),rgba(245,200,66,.02));
+  color:var(--gold);border-color:rgba(245,200,66,.2)
+}
+.nav-item.active::before{
+  content:'';position:absolute;left:0;top:20%;width:2px;height:60%;
+  background:var(--gold);border-radius:0 2px 2px 0
+}
+.nav-icon{width:18px;text-align:center;font-size:13px;flex-shrink:0}
+.nav-badge{
+  margin-left:auto;font-size:8px;font-family:var(--mono);
+  background:var(--gr);color:var(--red);padding:2px 5px;
+  border-radius:3px;border:1px solid rgba(255,107,74,.22);
+  animation:blink 2s ease-in-out infinite
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+
+.sb-footer{margin-top:auto;padding:14px 16px;border-top:1px solid var(--border)}
+.eng-status{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--text2);font-family:var(--mono)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--text3);transition:all .3s;flex-shrink:0}
+.dot.on{background:var(--sage);box-shadow:0 0 6px var(--sage)}
+.dot.busy{background:var(--gold);animation:blink 1s linear infinite}
+
+/* ── TOPBAR ───────────────────────────────────────────────── */
+.topbar{
+  height:52px;background:var(--bg1);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 22px;gap:14px;
+  position:sticky;top:0;z-index:50
+}
+.tb-title{font-size:13px;font-weight:700;color:var(--text);letter-spacing:.04em}
+.tb-breadcrumb{font-size:10px;color:var(--text3);font-family:var(--mono);display:flex;align-items:center;gap:5px}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.live-pill{
+  display:flex;align-items:center;gap:5px;background:var(--gg);
+  border:1px solid rgba(78,203,141,.2);border-radius:20px;padding:3px 9px;
+  font-size:9px;color:var(--sage);font-family:var(--mono);letter-spacing:.06em
+}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--sage);animation:livepulse 1.5s ease-in-out infinite}
+@keyframes livepulse{0%,100%{transform:scale(1)}50%{transform:scale(1.5);opacity:.5}}
+.tb-time{font-size:10px;color:var(--text3);font-family:var(--mono)}
+
+/* ── PAGES ───────────────────────────────────────────────── */
+.page{display:none;padding:22px;animation:fadein .25s ease}
+.page.active{display:block}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.page-hdr{margin-bottom:18px}
+.page-hdr h2{font-size:19px;font-weight:800;color:var(--text);letter-spacing:-.01em}
+.page-hdr p{font-size:10px;font-family:var(--mono);color:var(--text3);margin-top:3px}
+
+/* ── KPI GRID ─────────────────────────────────────────────── */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.kpi{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);
+  padding:16px 14px 12px;position:relative;overflow:hidden;
+  transition:border-color .2s,transform .15s;cursor:default
+}
+.kpi:hover{border-color:var(--border2);transform:translateY(-2px)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi.c-cyan::before{background:var(--gold)}
+.kpi.c-red::before{background:var(--coral)}
+.kpi.c-green::before{background:var(--sage)}
+.kpi.c-amber::before{background:var(--gold)}
+.kpi.c-purple::before{background:var(--lavender)}
+.kpi.c-blue::before{background:var(--sky)}
+.kpi-ico{position:absolute;top:10px;right:12px;font-size:17px;opacity:.12}
+.kpi-val{font-size:26px;font-weight:800;font-family:var(--mono);line-height:1;color:var(--text);letter-spacing:-.02em}
+.kpi-val.c-cyan{color:var(--gold)}.kpi-val.c-red{color:var(--coral)}
+.kpi-val.c-green{color:var(--sage)}.kpi-val.c-amber{color:var(--gold)}
+.kpi-val.c-purple{color:var(--lavender)}.kpi-val.c-blue{color:var(--sky)}
+.kpi-label{font-size:9px;color:var(--text2);letter-spacing:.1em;text-transform:uppercase;margin-top:5px;font-family:var(--mono)}
+.kpi-sub{font-size:9px;font-family:var(--mono);margin-top:2px;color:var(--text3)}
+
+/* ── CARD ─────────────────────────────────────────────────── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:14px}
+.card-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+.card-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text)}
+.card-sub{font-size:9px;color:var(--text3);font-family:var(--mono);margin-top:2px}
+.pill{font-size:8px;font-family:var(--mono);padding:3px 7px;border-radius:3px;letter-spacing:.05em;white-space:nowrap;margin-left:8px;flex-shrink:0}
+.pill-live{background:var(--gg);color:var(--sage);border:1px solid rgba(78,203,141,.2)}
+.pill-info{background:var(--ga);color:var(--gold);border:1px solid rgba(245,200,66,.2)}
+.pill-red{background:var(--gr);color:var(--coral);border:1px solid rgba(255,107,74,.2)}
+
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.ch{position:relative;min-height:220px}
+
+/* ── TIER BADGES ─────────────────────────────────────────── */
+.tier{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:3px;font-size:8px;letter-spacing:.07em;font-weight:700;font-family:var(--mono)}
+.tier::before{content:'';width:5px;height:5px;border-radius:50%}
+.tier.HIGH_RISK{background:var(--gr);color:var(--coral);border:1px solid rgba(255,107,74,.22)}.tier.HIGH_RISK::before{background:var(--coral);animation:blink 1s ease-in-out infinite}
+.tier.REVIEW{background:var(--ga);color:var(--gold);border:1px solid rgba(245,200,66,.22)}.tier.REVIEW::before{background:var(--gold)}
+.tier.LOW_RISK{background:var(--gg);color:var(--sage);border:1px solid rgba(78,203,141,.2)}.tier.LOW_RISK::before{background:var(--sage)}
+
+/* ── TABLE ───────────────────────────────────────────────── */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:10px}
+thead th{background:var(--bg3);color:var(--gold);font-size:8px;letter-spacing:.12em;text-transform:uppercase;padding:9px 11px;text-align:left;border-bottom:1px solid var(--border);font-weight:500;position:sticky;top:0;z-index:2}
+tbody td{padding:8px 11px;border-bottom:1px solid var(--border);color:var(--text);transition:background .1s}
+tbody tr:hover td{background:var(--bg3)}
+
+/* ── LIVE FEED ───────────────────────────────────────────── */
+.feed-list{max-height:340px;overflow-y:auto}
+.feed-item{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--border);animation:slidein .35s ease}
+@keyframes slidein{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+.fi-icon{font-size:15px;flex-shrink:0}
+.fi-info{flex:1;min-width:0}
+.fi-txn{font-size:10px;font-family:var(--mono);color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fi-meta{font-size:9px;color:var(--text2);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fi-score{font-size:17px;font-weight:800;font-family:var(--mono);min-width:32px;text-align:right;flex-shrink:0}
+.fi-score.h{color:var(--coral)}.fi-score.r{color:var(--gold)}.fi-score.l{color:var(--sage)}
+.fi-amt{font-size:10px;font-family:var(--mono);color:var(--text2);min-width:65px;text-align:right;flex-shrink:0}
+
+/* ── ALERT CARD ──────────────────────────────────────────── */
+.alert-card{background:var(--bg3);border:1px solid rgba(255,107,74,.14);border-left:3px solid var(--coral);border-radius:var(--r);padding:11px 13px;margin-bottom:7px;animation:slidein .3s ease}
+.ac-hdr{display:flex;align-items:center;margin-bottom:4px}
+.ac-id{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--coral)}
+.ac-amt{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text);margin-left:auto}
+.ac-signals{font-size:9px;color:var(--text2);line-height:1.7}
+
+/* ── SCORE FORM ──────────────────────────────────────────── */
+.sf-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fg{display:flex;flex-direction:column;gap:4px}
+label.fl{font-size:8px;color:var(--text2);letter-spacing:.12em;text-transform:uppercase;font-family:var(--mono)}
+input.fi,select.fi{
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);
+  color:var(--text);font-family:var(--mono);font-size:11px;padding:7px 9px;outline:none;
+  transition:border-color .18s;width:100%
+}
+input.fi:focus,select.fi:focus{border-color:var(--gold)}
+select.fi option{background:var(--bg2)}
+.btn{border:none;border-radius:var(--r);padding:9px 18px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:11px;letter-spacing:.04em;transition:all .18s}
+.btn-p{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--bg0)}
+.btn-p:hover{transform:translateY(-1px);box-shadow:0 4px 14px var(--ga)}
+.btn-s{background:var(--bg3);color:var(--text);border:1px solid var(--border)}
+.btn-s:hover{border-color:var(--border2)}
+.btn-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}
+
+/* ── SCORE RESULT ────────────────────────────────────────── */
+.score-result{display:none}
+.score-result.show{display:block;animation:fadein .3s ease}
+.score-gauge{text-align:center;padding:16px 0 10px}
+.gauge-num{font-size:52px;font-weight:800;font-family:var(--mono);line-height:1;transition:color .3s}
+.gauge-label{font-size:8px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;margin-top:2px}
+.score-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:12px 0}
+.sg-item{background:var(--bg0);border-radius:var(--r);padding:10px;text-align:center;border:1px solid var(--border)}
+.sg-val{font-size:16px;font-weight:800;font-family:var(--mono);color:var(--text)}
+.sg-lbl{font-size:8px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+.signals-list{margin-top:10px}
+.sig-item{display:flex;align-items:flex-start;gap:7px;font-size:10px;color:var(--text2);padding:4px 0;border-bottom:1px solid var(--border)}
+.sig-item::before{content:'▸';color:var(--coral);flex-shrink:0;margin-top:1px}
+.narrative{margin-top:11px;background:var(--bg0);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:var(--r);padding:11px 13px;font-size:10px;color:var(--text2);line-height:1.75;font-style:italic}
+.narr-src{font-size:8px;font-family:var(--mono);color:var(--text3);margin-top:5px}
+.score-idle{padding:40px 0;text-align:center;color:var(--text3);font-size:11px;font-family:var(--mono)}
+
+/* ── MODEL LEADERBOARD ───────────────────────────────────── */
+.lb-item{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--border)}
+.lb-rank{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-family:var(--mono);flex-shrink:0}
+.lb-rank.g{background:linear-gradient(135deg,#ffd700,#ffaa00);color:var(--bg0)}
+.lb-rank.s{background:linear-gradient(135deg,#c0c0c0,#999);color:var(--bg0)}
+.lb-rank.b{background:linear-gradient(135deg,#cd7f32,#a05020);color:var(--bg0)}
+.lb-rank.d{background:var(--bg3);color:var(--text2)}
+.lb-name{font-size:12px;font-weight:700;color:var(--text)}
+.lb-metrics{font-size:9px;font-family:var(--mono);color:var(--text2);margin-top:2px}
+.lb-auc{font-size:19px;font-weight:800;font-family:var(--mono);color:var(--gold);margin-left:auto}
+
+/* ── PROGRESS BARS ───────────────────────────────────────── */
+.pb-wrap{margin-bottom:5px}
+.pb-row{display:flex;justify-content:space-between;margin-bottom:2px}
+.pb-name{font-size:9px;font-family:var(--mono);color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:170px}
+.pb-val{font-size:9px;font-family:var(--mono);color:var(--text)}
+.pb-track{height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.pb-fill{height:100%;border-radius:3px;transition:width .9s cubic-bezier(.4,0,.2,1)}
+
+/* ── ROC LEGEND ──────────────────────────────────────────── */
+.roc-legend{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px}
+.rl-item{display:flex;align-items:center;gap:5px;font-size:9px;font-family:var(--mono);color:var(--text2)}
+.rl-line{width:18px;height:2px;border-radius:2px;flex-shrink:0}
+
+/* ── TABS ────────────────────────────────────────────────── */
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:14px}
+.tab{padding:8px 14px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text2);border-bottom:2px solid transparent;transition:color .15s,border-color .15s;user-select:none}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.tc{display:none}.tc.active{display:block;animation:fadein .2s ease}
+
+/* ── SEARCH ──────────────────────────────────────────────── */
+.search-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.si{flex:1;min-width:180px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--mono);font-size:11px;padding:7px 11px;outline:none;transition:border-color .18s}
+.si:focus{border-color:var(--gold)}
+.sf{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--mono);font-size:10px;padding:7px 9px;outline:none;cursor:pointer}
+.sf option{background:var(--bg2)}
+
+/* ── PAGINATION ──────────────────────────────────────────── */
+.pg-row{display:flex;align-items:center;gap:10px;margin-top:11px;flex-wrap:wrap}
+.pg-info{font-size:9px;font-family:var(--mono);color:var(--text2)}
+
+/* ── ARCH ────────────────────────────────────────────────── */
+.arch-flow{display:flex;align-items:center;overflow-x:auto;padding:16px 0;gap:0}
+.arch-step{display:flex;flex-direction:column;align-items:center;min-width:96px}
+.arch-box{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:9px 12px;text-align:center;width:84px;cursor:default;transition:border-color .2s}
+.arch-box:hover{border-color:var(--gold)}
+.arch-ico{font-size:18px;margin-bottom:3px}
+.arch-name{font-size:8px;font-weight:700;letter-spacing:.06em;color:var(--text);text-transform:uppercase}
+.arch-file{font-size:7px;font-family:var(--mono);color:var(--text3);margin-top:1px}
+.arch-arrow{font-size:16px;color:var(--border2);margin:0 2px;margin-top:-18px;flex-shrink:0}
+
+/* ── IMPACT COMPARE ──────────────────────────────────────── */
+.impact-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ic-card{background:var(--bg3);border-radius:var(--r);padding:13px}
+.ic-lbl{font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);font-family:var(--mono);margin-bottom:8px}
+.ic-row{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.ic-sys{font-size:9px;font-family:var(--mono);color:var(--text2);min-width:75px}
+.ic-track{flex:1;height:10px;background:var(--bg1);border-radius:2px;overflow:hidden}
+.ic-fill{height:100%;border-radius:2px;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.ic-val{font-size:9px;font-family:var(--mono);color:var(--text);min-width:34px;text-align:right}
+
+/* ── FEEDBACK ────────────────────────────────────────────── */
+.fb-btn{
+  position:fixed;bottom:22px;right:22px;z-index:200;
+  width:48px;height:48px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  border:none;cursor:pointer;font-size:20px;
+  box-shadow:0 4px 18px var(--ga);transition:transform .2s,box-shadow .2s
+}
+.fb-btn:hover{transform:scale(1.1);box-shadow:0 6px 24px var(--ga)}
+.fb-panel{
+  position:fixed;bottom:78px;right:22px;z-index:200;
+  width:300px;background:var(--bg2);border:1px solid rgba(245,200,66,.25);
+  border-radius:10px;padding:18px;
+  display:none;animation:fadein .25s ease;
+  box-shadow:0 12px 36px rgba(0,0,0,.55)
+}
+.fb-panel.open{display:block}
+.fb-title{font-size:12px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:7px;margin-bottom:13px}
+.fb-close{margin-left:auto;background:none;border:none;color:var(--text2);cursor:pointer;font-size:15px;line-height:1}
+.stars{display:flex;gap:3px;margin-bottom:10px}
+.star{font-size:19px;cursor:pointer;color:var(--text3);transition:color .12s;user-select:none}
+.star.on{color:var(--amber)}
+.fb-submitted{display:none;text-align:center;padding:16px 0}
+.fb-submitted.show{display:block;animation:fadein .3s ease}
+.fb-ok-ico{font-size:36px;margin-bottom:7px}
+.fb-ok-txt{font-size:12px;color:var(--green);font-weight:600}
+.fb-ok-sub{font-size:10px;color:var(--text2);margin-top:4px}
+.fg-mb{margin-bottom:9px}
+
+/* ── LOADING ─────────────────────────────────────────────── */
+#loader{position:fixed;inset:0;background:var(--bg0);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10000;transition:opacity .45s}
+#loader.out{opacity:0;pointer-events:none}
+.loader-hex{width:64px;height:64px;background:linear-gradient(135deg,var(--gold),var(--gold2));clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:22px;animation:spin 2.4s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-title{font-size:22px;font-weight:800;color:var(--text);margin-bottom:4px}
+.loader-sub{font-size:10px;font-family:var(--mono);color:var(--text2);margin-bottom:26px;letter-spacing:.05em}
+.loader-bar-bg{width:260px;height:3px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.loader-bar{height:100%;background:linear-gradient(90deg,var(--gold),var(--coral));border-radius:2px;transition:width .3s}
+.loader-step{font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:8px;letter-spacing:.05em;min-height:14px}
+
+/* ── NOTIF ───────────────────────────────────────────────── */
+.notif-wrap{position:fixed;top:60px;right:18px;z-index:300;display:flex;flex-direction:column;gap:6px;max-width:270px}
+.notif{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 13px;animation:slidein .25s ease;box-shadow:0 4px 18px rgba(0,0,0,.4);transition:opacity .3s}
+.notif.nh{border-left:3px solid var(--coral)}
+.notif.ns{border-left:3px solid var(--sage)}
+.notif-t{font-size:10px;font-weight:700;color:var(--text)}
+.notif-b{font-size:9px;font-family:var(--mono);color:var(--text2);margin-top:2px}
+
+@media(max-width:860px){.g2,.g3{grid-template-columns:1fr}.sidebar{transform:translateX(-100%)}.main{margin-left:0}}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-hex">🛡</div>
+  <div class="loader-title">FraudSentinel</div>
+  <div class="loader-sub">INITIALISING INTELLIGENCE ENGINE</div>
+  <div class="loader-bar-bg"><div class="loader-bar" id="lbar" style="width:4%"></div></div>
+  <div class="loader-step" id="lstep">Loading…</div>
+</div>
+
+<div class="shell">
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="logo-area">
+    <div class="logo">
+      <div class="logo-hex">🛡</div>
+      <div class="logo-words">
+        <div class="logo-name">Fraud<span>Sentinel</span></div>
+        <div class="logo-tag">Risk Intelligence v3</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-group">Analytics</div>
+  <div class="nav-item active" onclick="nav('dashboard')"><span class="nav-icon">⬛</span>Dashboard</div>
+  <div class="nav-item" onclick="nav('live')"><span class="nav-icon">⚡</span>Live Feed<span class="nav-badge" id="alert-count">—</span></div>
+  <div class="nav-item" onclick="nav('eda')"><span class="nav-icon">📊</span>Explore Data</div>
+
+  <div class="nav-group">Intelligence</div>
+  <div class="nav-item" onclick="nav('models')"><span class="nav-icon">🧠</span>ML Models</div>
+  <div class="nav-item" onclick="nav('scorer')"><span class="nav-icon">🎯</span>Score Transaction</div>
+  <div class="nav-item" onclick="nav('transactions')"><span class="nav-icon">🗄</span>Transactions</div>
+
+  <div class="nav-group">System</div>
+  <div class="nav-item" onclick="nav('arch')"><span class="nav-icon">🏗</span>Architecture</div>
+
+  <div class="sb-footer">
+    <div class="eng-status"><div class="dot busy" id="edot"></div><span id="etext">Training…</span></div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+<header class="topbar">
+  <div class="tb-title">🛡 FraudSentinel</div>
+  <div class="tb-breadcrumb"><span id="crumb">Dashboard</span></div>
+  <div class="tb-right">
+    <div class="live-pill"><div class="live-dot"></div>LIVE</div>
+    <div class="tb-time" id="clock">—</div>
+  </div>
+</header>
+
+<!-- ═══ DASHBOARD ═══════════════════════════════════════════ -->
+<div class="page active" id="page-dashboard">
+  <div class="page-hdr"><h2>Executive Dashboard</h2><p>75,000 UK transactions · Real-time ML risk scoring</p></div>
+
+  <div class="kpi-row">
+    <div class="kpi c-cyan"><div class="kpi-ico">📋</div><div class="kpi-val c-cyan" id="k-total">—</div><div class="kpi-label">Transactions</div></div>
+    <div class="kpi c-red"><div class="kpi-ico">⚠</div><div class="kpi-val c-red" id="k-fraud">—</div><div class="kpi-label">Fraud Cases</div><div class="kpi-sub" id="k-rate">—</div></div>
+    <div class="kpi c-amber"><div class="kpi-ico">🔴</div><div class="kpi-val c-amber" id="k-high">—</div><div class="kpi-label">High Risk</div><div class="kpi-sub" id="k-review">— in review</div></div>
+    <div class="kpi c-green"><div class="kpi-ico">🎯</div><div class="kpi-val c-green" id="k-auc">—</div><div class="kpi-label">Best ROC-AUC</div></div>
+    <div class="kpi c-blue"><div class="kpi-ico">✅</div><div class="kpi-val c-blue" id="k-recall">—</div><div class="kpi-label">Recall</div></div>
+    <div class="kpi c-purple"><div class="kpi-ico">💷</div><div class="kpi-val c-purple" id="k-net">—</div><div class="kpi-label">Est. Net Value</div></div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-hdr"><div><div class="card-title">Fraud Rate by Merchant</div><div class="card-sub">Red = highest risk categories</div></div><span class="pill pill-info">EDA</span></div>
+      <div class="ch"><canvas id="ch-merch"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div><div class="card-title">Risk Tier Distribution</div><div class="card-sub">All 75,000 transactions scored</div></div><span class="pill pill-live">LIVE</span></div>
+      <div class="ch"><canvas id="ch-tiers"></canvas></div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-hdr"><div><div class="card-title">Monthly Volume + Fraud</div><div class="card-sub">Dual axis — volume left, fraud right</div></div></div>
+      <div class="ch"><canvas id="ch-monthly"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div><div class="card-title">Fraud Rate by Hour</div><div class="card-sub">Late-night hours highlighted in red</div></div></div>
+      <div class="ch"><canvas id="ch-hourly"></canvas></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">Business Impact — ML vs Rule-Based</div><span class="pill pill-info">+44% detection · −76% false alarms</span></div>
+    <div class="impact-grid">
+      <div class="ic-card">
+        <div class="ic-lbl">Fraud Detection Rate</div>
+        <div class="ic-row"><span class="ic-sys">Rule-Based</span><div class="ic-track"><div class="ic-fill" style="width:62%;background:var(--bg4)"></div></div><span class="ic-val">62%</span></div>
+        <div class="ic-row"><span class="ic-sys">FraudSentinel</span><div class="ic-track"><div class="ic-fill" style="width:89%;background:var(--green)"></div></div><span class="ic-val">89%</span></div>
+      </div>
+      <div class="ic-card">
+        <div class="ic-lbl">False Positive Rate</div>
+        <div class="ic-row"><span class="ic-sys">Rule-Based</span><div class="ic-track"><div class="ic-fill" style="width:100%;background:var(--red);opacity:.5"></div></div><span class="ic-val">18%</span></div>
+        <div class="ic-row"><span class="ic-sys">FraudSentinel</span><div class="ic-track"><div class="ic-fill" style="width:23.9%;background:var(--green)"></div></div><span class="ic-val">4.3%</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ LIVE FEED ════════════════════════════════════════════ -->
+<div class="page" id="page-live">
+  <div class="page-hdr"><h2>⚡ Live Transaction Feed</h2><p>Streaming scored transactions — updating every 4 seconds</p></div>
+  <div class="g2">
+    <div>
+      <div class="card">
+        <div class="card-hdr"><div><div class="card-title">Incoming Transactions</div><div class="card-sub" id="feed-count">Awaiting stream…</div></div><span class="pill pill-live">STREAMING</span></div>
+        <div class="feed-list" id="feed-list"></div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-hdr"><div><div class="card-title">HIGH RISK Alerts</div><div class="card-sub">Score ≥ 50 — immediate action required</div></div><span class="pill pill-red">ALERTS</span></div>
+        <div style="max-height:260px;overflow-y:auto" id="alert-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Session Statistics</div></div>
+        <div class="kpi-row" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:0">
+          <div class="kpi c-red" style="padding:11px"><div class="kpi-val c-red" style="font-size:20px" id="s-alerts">0</div><div class="kpi-label">Alerts</div></div>
+          <div class="kpi c-amber" style="padding:11px"><div class="kpi-val c-amber" style="font-size:20px" id="s-review">0</div><div class="kpi-label">Review</div></div>
+          <div class="kpi c-cyan" style="padding:11px"><div class="kpi-val c-cyan" style="font-size:20px" id="s-total">0</div><div class="kpi-label">Processed</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ EDA ══════════════════════════════════════════════════ -->
+<div class="page" id="page-eda">
+  <div class="page-hdr"><h2>📊 Exploratory Data Analysis</h2><p>75,000 transactions · 15 raw features · 1.72% fraud rate</p></div>
+  <div class="tabs">
+    <div class="tab active" onclick="tab('eda','dist',this)">Distributions</div>
+    <div class="tab" onclick="tab('eda','patterns',this)">Fraud Patterns</div>
+    <div class="tab" onclick="tab('eda','amounts',this)">Amounts</div>
+  </div>
+  <div class="tc active" id="eda-dist">
+    <div class="g2">
+      <div class="card"><div class="card-hdr"><div class="card-title">Class Distribution</div></div><div class="ch"><canvas id="ch-class"></canvas></div></div>
+      <div class="card"><div class="card-hdr"><div class="card-title">Fraud Rate by Location</div></div><div class="ch"><canvas id="ch-loc"></canvas></div></div>
+    </div>
+  </div>
+  <div class="tc" id="eda-patterns">
+    <div class="g2">
+      <div class="card"><div class="card-hdr"><div class="card-title">Fraud Rate by Hour</div><span class="pill pill-info">is_night feature</span></div><div class="ch"><canvas id="ch-hour-eda"></canvas></div></div>
+      <div class="card"><div class="card-hdr"><div class="card-title">Fraud Rate by Merchant</div><span class="pill pill-info">merchant_risk feature</span></div><div class="ch"><canvas id="ch-merch-eda"></canvas></div></div>
+    </div>
+  </div>
+  <div class="tc" id="eda-amounts">
+    <div class="card"><div class="card-hdr"><div><div class="card-title">Transaction Amount Distribution by Class</div><div class="card-sub">Fraud skews towards higher values — key signal for log_amount feature</div></div></div><div class="ch" style="min-height:260px"><canvas id="ch-amounts"></canvas></div></div>
+  </div>
+</div>
+
+<!-- ═══ MODELS ═══════════════════════════════════════════════ -->
+<div class="page" id="page-models">
+  <div class="page-hdr"><h2>🧠 ML Models</h2><p>4 models · ROC-AUC benchmarked · ROSE class balancing · 30k subsample</p></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">Leaderboard</div><span class="pill pill-info">Test AUC</span></div>
+      <div id="leaderboard"></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div><div class="card-title">ROC Curves</div><div class="card-sub">Upper-left = better discrimination</div></div></div>
+      <div class="ch" style="min-height:240px"><canvas id="ch-roc"></canvas></div>
+      <div class="roc-legend" id="roc-legend"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><div><div class="card-title">Feature Importance — Random Forest</div><div class="card-sub">Cyan = engineered feature ✦</div></div><span class="pill pill-info">Mean Decrease Gini</span></div>
+    <div id="fi-list"></div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><div><div class="card-title">Risk Score Distribution</div><div class="card-sub">Clear separation confirms good calibration</div></div></div>
+    <div class="ch"><canvas id="ch-rsd"></canvas></div>
+  </div>
+</div>
+
+<!-- ═══ SCORER ═══════════════════════════════════════════════ -->
+<div class="page" id="page-scorer">
+  <div class="page-hdr"><h2>🎯 Score a Transaction</h2><p>Real-time ML risk assessment · Optional Claude LLM narrative</p></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">Transaction Details</div></div>
+      <div class="sf-grid">
+        <div class="fg"><label class="fl">Amount (£)</label><input class="fi" id="sf-amt" type="number" value="4820" step="0.01"></div>
+        <div class="fg"><label class="fl">Hour of Day (0-23)</label><input class="fi" id="sf-hour" type="number" value="2" min="0" max="23"></div>
+        <div class="fg"><label class="fl">Merchant Category</label>
+          <select class="fi" id="sf-merch">
+            <option value="crypto_exchange">Crypto Exchange ⚠ Risk 5</option>
+            <option value="atm_withdrawal">ATM Withdrawal ⚠ Risk 4</option>
+            <option value="luxury_goods">Luxury Goods ⚠ Risk 4</option>
+            <option value="online_retail">Online Retail Risk 3</option>
+            <option value="travel">Travel Risk 3</option>
+            <option value="entertainment">Entertainment Risk 2</option>
+            <option value="pharmacy">Pharmacy Risk 2</option>
+            <option value="restaurant" selected>Restaurant Risk 1</option>
+            <option value="grocery">Grocery Risk 1</option>
+            <option value="utilities">Utilities Risk 1</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Location</label>
+          <select class="fi" id="sf-loc">
+            <option value="international">International ⚠</option>
+            <option value="online_only">Online Only</option>
+            <option value="domestic">Domestic</option>
+            <option value="home_city" selected>Home City</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Velocity (txns/hr)</label><input class="fi" id="sf-vel" type="number" value="1" min="0"></div>
+        <div class="fg"><label class="fl">Distance from Home (km)</label><input class="fi" id="sf-dist" type="number" value="15" min="0"></div>
+        <div class="fg"><label class="fl">Card Present</label><select class="fi" id="sf-card"><option value="1">Yes — Physical</option><option value="0">No — CNP ⚠</option></select></div>
+        <div class="fg"><label class="fl">Device Match</label><select class="fi" id="sf-dev"><option value="1">Known Device</option><option value="0">Unknown ⚠</option></select></div>
+        <div class="fg"><label class="fl">IP Country Match</label><select class="fi" id="sf-ip"><option value="1">Match</option><option value="0">Mismatch ⚠</option></select></div>
+        <div class="fg"><label class="fl">Prior Fraud Flag</label><select class="fi" id="sf-pf"><option value="0">No Prior Fraud</option><option value="1">Prior Fraud ⚠</option></select></div>
+        <div class="fg"><label class="fl">Account Age (months)</label><input class="fi" id="sf-acct" type="number" value="24" min="0"></div>
+        <div class="fg"><label class="fl">Days Since Last Txn</label><input class="fi" id="sf-days" type="number" value="5" min="0"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-p" onclick="doScore()">▶ Score Transaction</button>
+        <button class="btn btn-s" onclick="loadHigh()">Load High Risk</button>
+        <button class="btn btn-s" onclick="loadLow()">Load Low Risk</button>
+      </div>
+      <div style="margin-top:12px">
+        <label class="fl">Anthropic API Key (optional — for live Claude narratives)</label>
+        <input class="fi" id="sf-key" type="password" placeholder="sk-ant-… (leave blank for rule-based)" style="margin-top:4px">
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">Risk Assessment</div></div>
+      <div class="score-idle" id="sc-idle">← Fill in details and click Score Transaction</div>
+      <div class="score-result" id="sc-result">
+        <div class="score-gauge">
+          <div class="gauge-num" id="sc-num">—</div>
+          <div class="gauge-label">RISK SCORE / 100</div>
+          <div style="margin-top:8px" id="sc-tier"></div>
+        </div>
+        <div class="score-grid">
+          <div class="sg-item"><div class="sg-val" id="sc-prob">—</div><div class="sg-lbl">Fraud Prob</div></div>
+          <div class="sg-item"><div class="sg-val" id="sc-comp">—</div><div class="sg-lbl">Composite Risk</div></div>
+          <div class="sg-item"><div class="sg-val" id="sc-mr">—</div><div class="sg-lbl">Merchant Risk</div></div>
+        </div>
+        <div class="signals-list" id="sc-signals"></div>
+        <div class="narrative" id="sc-narr" style="display:none"></div>
+        <div class="narr-src" id="sc-nsrc"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TRANSACTIONS ══════════════════════════════════════════ -->
+<div class="page" id="page-transactions">
+  <div class="page-hdr"><h2>🗄 Transaction Explorer</h2><p>All 75,000 scored transactions — search, filter, paginate</p></div>
+  <div class="search-row">
+    <input class="si" id="txn-q" placeholder="Search transaction ID or merchant…" oninput="doSearch()">
+    <select class="sf" id="txn-tier" onchange="doSearch()">
+      <option value="">All Tiers</option>
+      <option value="HIGH_RISK">🔴 HIGH_RISK</option>
+      <option value="REVIEW">🟡 REVIEW</option>
+      <option value="LOW_RISK">🟢 LOW_RISK</option>
+    </select>
+    <button class="btn btn-s" onclick="doSearch()">Search</button>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">Results</div><span class="card-sub" id="txn-count">—</span></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Transaction ID</th><th>Amount</th><th>Merchant</th><th>Location</th><th>Score</th><th>Tier</th><th>Fraud Prob</th><th>True Label</th></tr></thead>
+        <tbody id="txn-body"></tbody>
+      </table>
+    </div>
+    <div class="pg-row">
+      <button class="btn btn-s" onclick="pgPrev()" id="pg-prev" disabled>← Prev</button>
+      <span class="pg-info" id="pg-info">Page 1</span>
+      <button class="btn btn-s" onclick="pgNext()" id="pg-next">Next →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ARCHITECTURE ══════════════════════════════════════════ -->
+<div class="page" id="page-arch">
+  <div class="page-hdr"><h2>🏗 System Architecture</h2><p>End-to-end pipeline · 5-agent workflow · LLM integration</p></div>
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">Pipeline Flow</div></div>
+    <div class="arch-flow">
+      <div class="arch-step"><div class="arch-box"><div class="arch-ico">📁</div><div class="arch-name">Raw Data</div><div class="arch-file">fraud_txns.csv</div></div></div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-step"><div class="arch-box"><div class="arch-ico">🔍</div><div class="arch-name">Validate</div><div class="arch-file">01_ingestion</div></div></div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-step"><div class="arch-box"><div class="arch-ico">⚙</div><div class="arch-name">Features</div><div class="arch-file">02_features</div></div></div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-step"><div class="arch-box"><div class="arch-ico">🧠</div><div class="arch-name">4 Models</div><div class="arch-file">03_training</div></div></div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-step"><div class="arch-box"><div class="arch-ico">🎯</div><div class="arch-name">Scoring</div><div class="arch-file">04_scoring</div></div></div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-step"><div class="arch-box" style="border-color:rgba(255,107,74,.4)"><div class="arch-ico">🤖</div><div class="arch-name">Agentic</div><div class="arch-file">06_agentic</div></div></div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-step"><div class="arch-box" style="border-color:rgba(245,200,66,.4)"><div class="arch-ico">📢</div><div class="arch-name">Alerts</div><div class="arch-file">JSON + API</div></div></div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">5-Agent Workflow</div></div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <div class="alert-card" style="border-left-color:var(--gold)"><div class="ac-hdr"><span class="ac-id" style="color:var(--gold)">Agent 1 — Stream Simulator</span></div><div class="ac-signals">Generates batched transaction feeds at configurable intervals, mimicking Kafka/API ingestion.</div></div>
+        <div class="alert-card" style="border-left-color:var(--green)"><div class="ac-hdr"><span class="ac-id" style="color:var(--green)">Agent 2 — Risk Classifier</span></div><div class="ac-signals">Scores each transaction via Random Forest (AUC ~0.91+). Returns probability, score 0–100, tier.</div></div>
+        <div class="alert-card" style="border-left-color:var(--purple)"><div class="ac-hdr"><span class="ac-id" style="color:var(--purple)">Agent 3 — Feature Explainer</span></div><div class="ac-signals">Extracts top risk signals per transaction. LIME-proxy approach — transparent, no black box.</div></div>
+        <div class="alert-card" style="border-left-color:var(--red)"><div class="ac-hdr"><span class="ac-id" style="color:var(--red)">Agent 4 — Claude LLM Narrator</span></div><div class="ac-signals">Calls Anthropic Claude API to generate professional analyst-ready alert narratives. Rule-based fallback.</div></div>
+        <div class="alert-card" style="border-left-color:var(--amber)"><div class="ac-hdr"><span class="ac-id" style="color:var(--amber)">Agent 5 — Alert Dispatcher</span></div><div class="ac-signals">Packages JSON alerts, logs to file, routes to analyst queue or block system.</div></div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Tech Stack</div></div>
+        <div style="display:flex;flex-direction:column;gap:1px">
+          <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:10px"><span style="color:var(--text2)">ML Engine</span><span style="font-family:var(--mono);color:var(--gold)">Python · scikit-learn · Random Forest</span></div>
+          <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:10px"><span style="color:var(--text2)">R Pipeline</span><span style="font-family:var(--mono);color:var(--gold)">caret · XGBoost · pROC · ROSE</span></div>
+          <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:10px"><span style="color:var(--text2)">Backend</span><span style="font-family:var(--mono);color:var(--gold)">Flask 3.1 · Python 3.12</span></div>
+          <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:10px"><span style="color:var(--text2)">Frontend</span><span style="font-family:var(--mono);color:var(--gold)">Vanilla JS · Chart.js 4.4</span></div>
+          <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:10px"><span style="color:var(--text2)">LLM</span><span style="font-family:var(--mono);color:var(--gold)">Anthropic Claude (haiku)</span></div>
+          <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:10px"><span style="color:var(--text2)">Reporting</span><span style="font-family:var(--mono);color:var(--gold)">Quarto · SCSS · plotly · DT</span></div>
+          <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:10px"><span style="color:var(--text2)">CI/CD</span><span style="font-family:var(--mono);color:var(--gold)">GitHub Actions · renv</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Feature Engineering</div><span class="pill pill-info">15 raw → 25 features</span></div>
+        <div style="font-size:9px;color:var(--text2);line-height:1.9;font-family:var(--mono)">
+          <span style="color:var(--gold)">log_amount</span> · amount_zscore · amount_outlier<br>
+          <span style="color:var(--gold)">hour_sin / hour_cos</span> — cyclical encoding<br>
+          <span style="color:var(--gold)">vel_dist</span> = velocity × log(distance)<br>
+          <span style="color:var(--gold)">composite_risk</span> — weighted sum 0–20<br>
+          merchant_risk (1–5) · location_risk (1–4)<br>
+          trust_score · risk_flags · is_high_risk_combo<br>
+          is_night · is_weekend · is_new_account
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- FEEDBACK -->
+<button class="fb-btn" onclick="fbToggle()" title="Give feedback">💬</button>
+<div class="fb-panel" id="fb-panel">
+  <div class="fb-title">💬 Feedback <button class="fb-close" onclick="fbToggle()">✕</button></div>
+  <div id="fb-fields">
+    <div class="fg fg-mb"><label class="fl">Your name</label><input class="fi" id="fb-name" placeholder="Gauri Kshirsagar"></div>
+    <div class="fg fg-mb"><label class="fl">Role</label><select class="fi" id="fb-role"><option>MSc Student</option><option>Recruiter</option><option>Data Scientist</option><option>Engineer</option><option>Other</option></select></div>
+    <div class="fg fg-mb"><label class="fl">Category</label><select class="fi" id="fb-cat"><option>Overall Experience</option><option>Dashboard Design</option><option>ML Models</option><option>Live Feed</option><option>Score Transaction</option><option>Bug Report</option></select></div>
+    <div class="fg-mb"><div class="fl" style="margin-bottom:5px">Rating</div><div class="stars" id="stars"><span class="star on" onclick="setStars(1)">★</span><span class="star on" onclick="setStars(2)">★</span><span class="star on" onclick="setStars(3)">★</span><span class="star on" onclick="setStars(4)">★</span><span class="star on" onclick="setStars(5)">★</span></div></div>
+    <div class="fg fg-mb"><label class="fl">Message</label><textarea class="fi" id="fb-msg" rows="3" style="resize:vertical" placeholder="What do you think of FraudSentinel?"></textarea></div>
+    <button class="btn btn-p" style="width:100%" onclick="fbSubmit()">Submit Feedback</button>
+  </div>
+  <div class="fb-submitted" id="fb-done">
+    <div class="fb-ok-ico">✅</div>
+    <div class="fb-ok-txt">Feedback received!</div>
+    <div class="fb-ok-sub">Thank you for helping improve FraudSentinel.</div>
+    <button class="btn btn-s" style="margin-top:11px;width:100%" onclick="fbReset()">Submit Another</button>
+  </div>
+</div>
+
+<!-- NOTIFICATIONS -->
+<div class="notif-wrap" id="notifs"></div>
+
+<script>
+'use strict';
+// ════════════════════════════════════════════════════════════
+// FraudSentinel v3 Frontend
+// ════════════════════════════════════════════════════════════
+
+const $ = id => document.getElementById(id);
+const fmt = n => n == null ? '—' : Number(n).toLocaleString('en-GB');
+const fmtGbp = n => '£' + Number(n).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtPct = n => (Number(n)*100).toFixed(1)+'%';
+
+let charts={}, edaData=null, modelData=null;
+let isReady=false, feedInterval=null;
+let sAlerts=0, sReview=0, sTotal=0;
+let txPage=1, fbStars=5;
+
+// ── CHART DEFAULTS ─────────────────────────────────────────
+Chart.defaults.color='#8c7b68';
+Chart.defaults.font.family="'DM Mono',monospace";
+Chart.defaults.font.size=9;
+Chart.defaults.animation=false;
+
+const GC='rgba(60,53,48,.8)';
+const CD={
+  responsive:true, maintainAspectRatio:false, animation:false,
+  plugins:{legend:{display:false}},
+  scales:{
+    x:{grid:{color:GC},ticks:{color:'#4e7099',maxTicksLimit:10}},
+    y:{grid:{color:GC},ticks:{color:'#4e7099',maxTicksLimit:6}}
+  }
+};
+
+function mkC(id,cfg){
+  const el=document.getElementById(id); if(!el)return null;
+  if(charts[id]){charts[id].destroy();delete charts[id];}
+  charts[id]=new Chart(el.getContext('2d'),cfg);
+  return charts[id];
+}
+
+// ── CLOCK ──────────────────────────────────────────────────
+setInterval(()=>{ $('clock').textContent=new Date().toLocaleTimeString('en-GB'); },1000);
+$('clock').textContent=new Date().toLocaleTimeString('en-GB');
+
+// ── NAVIGATION ─────────────────────────────────────────────
+const pageNames={dashboard:'Dashboard',live:'Live Feed',eda:'Explore Data',models:'ML Models',scorer:'Score Transaction',transactions:'Transactions',arch:'Architecture'};
+function nav(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  $('page-'+name).classList.add('active');
+  // match nav item by text
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    const t=n.textContent.trim().toLowerCase();
+    if(t.includes(name.replace('-',' '))||t.startsWith(name.slice(0,5)))n.classList.add('active');
+  });
+  $('crumb').textContent=pageNames[name]||name;
+  if(name==='eda' && edaData && !charts['ch-class']) renderEda();
+  if(name==='models' && modelData && !charts['ch-roc']) renderModels();
+  if(name==='live' && isReady){ startFeed(); }
+  if(name!=='live' && feedInterval){ clearInterval(feedInterval); feedInterval=null; }
+  if(name==='transactions') doSearch();
+}
+
+function tab(group,name,el){
+  document.querySelectorAll('#page-'+group+' .tc').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('#page-'+group+' .tab').forEach(t=>t.classList.remove('active'));
+  $(group+'-'+name).classList.add('active');
+  el.classList.add('active');
+}
+
+// ── LOADING ────────────────────────────────────────────────
+// Steps auto-scale: locally ~3s, on Render cold start ~60-90s
+const STEPS=[
+  {p:20, m:'Loading 75,000 transactions…',    t:150},
+  {p:50, m:'Engineering 25 features…',        t:300},
+  {p:78, m:'Loading pre-trained model…',      t:450},
+  {p:92, m:'Applying risk scores…',           t:560},
+  {p:97, m:'Building dashboard cache…',       t:620},
+];
+
+async function pollStatus(){
+  const bar=$('lbar'), step=$('lstep'), t0=Date.now();
+  const anim=setInterval(()=>{
+    const e=Date.now()-t0;
+    for(let i=STEPS.length-1;i>=0;i--){
+      if(e>=STEPS[i].t){ bar.style.width=STEPS[i].p+'%'; step.textContent=STEPS[i].m; break; }
+    }
+  },80);
+  while(true){
+    try{
+      const d=await fetch('/api/status').then(r=>r.json());
+      if(d.done){
+        clearInterval(anim);
+        bar.style.width='100%'; step.textContent='✓ Engine ready!';
+        await new Promise(r=>setTimeout(r,380));
+        $('loader').classList.add('out');
+        isReady=true;
+        await loadAll();
+        $('edot').className='dot on'; $('etext').textContent='Engine Online';
+        return;
+      }
+    }catch(e){}
+    await new Promise(r=>setTimeout(r,1500));  // 1.5s on remote to avoid hammering
+  }
+}
+
+// ── LOAD ALL DATA ──────────────────────────────────────────
+async function loadAll(){
+  const [dr,er,mr]=await Promise.all([
+    fetch('/api/dashboard'), fetch('/api/eda'), fetch('/api/models')
+  ]);
+  const dash=await dr.json();
+  edaData=await er.json();
+  modelData=await mr.json();
+
+  renderKPIs(dash.kpis);
+  $('alert-count').textContent=fmt(dash.kpis.high_risk_count||0);
+
+  // Render dashboard charts on next frame, rest deferred
+  requestAnimationFrame(()=>{
+    renderDash(edaData, dash);
+    setTimeout(()=>{ renderEda(); renderModels(); },350);
+  });
+}
+
+// ── KPIs ───────────────────────────────────────────────────
+function renderKPIs(k){
+  $('k-total').textContent=fmt(k.total_transactions);
+  $('k-fraud').textContent=fmt(k.total_fraud);
+  $('k-rate').textContent='↑ '+k.fraud_rate+'% base rate';
+  $('k-high').textContent=fmt(k.high_risk_count);
+  $('k-review').textContent=fmt(k.review_count)+' in review queue';
+  $('k-auc').textContent=k.best_auc;
+  $('k-recall').textContent=(k.recall*100).toFixed(1)+'%';
+  $('k-net').textContent='£'+(k.net_value_gbp/1e6).toFixed(1)+'M';
+}
+
+// ── DASHBOARD CHARTS ───────────────────────────────────────
+function renderDash(eda, dash){
+  const tc=dash.tier_counts||{};
+
+  // Merchant bar (horizontal)
+  const m=[...eda.merchant].reverse();
+  mkC('ch-merch',{type:'bar',data:{
+    labels:m.map(d=>d.merchant_category),
+    datasets:[{data:m.map(d=>+(d.fraud_rate*100).toFixed(2)),borderRadius:3,borderColor:'transparent',
+      backgroundColor:m.map(d=>d.fraud_rate>0.05?'rgba(255,107,74,.8)':d.fraud_rate>0.02?'rgba(245,200,66,.75)':'rgba(78,203,141,.6)')}]
+  },options:{...CD,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:v=>v.raw+'%'}}},
+    scales:{x:{...CD.scales.x,ticks:{...CD.scales.x.ticks,callback:v=>v+'%'}},y:{...CD.scales.y}}}});
+
+  // Tier donut
+  mkC('ch-tiers',{type:'doughnut',data:{
+    labels:['HIGH_RISK','REVIEW','LOW_RISK'],
+    datasets:[{data:[tc.HIGH_RISK||0,tc.REVIEW||0,tc.LOW_RISK||0],
+      backgroundColor:['rgba(255,107,74,.85)','rgba(245,200,66,.8)','rgba(78,203,141,.7)'],
+      borderColor:['#ff6b4a','#f5c842','#4ecb8d'],borderWidth:1}]
+  },options:{responsive:true,maintainAspectRatio:false,animation:false,cutout:'60%',
+    plugins:{legend:{display:true,position:'bottom',labels:{color:'#4e7099',boxWidth:9,padding:10,font:{size:9}}},
+      tooltip:{callbacks:{label:v=>`${v.label}: ${fmt(v.raw)}`}}}}});
+
+  // Monthly line
+  const mo=eda.monthly||[];
+  mkC('ch-monthly',{type:'line',data:{
+    labels:mo.map(d=>d.month.slice(5)),
+    datasets:[
+      {label:'Volume',data:mo.map(d=>d.total),borderColor:'rgba(245,200,66,.85)',backgroundColor:'rgba(245,200,66,.07)',fill:true,tension:.35,pointRadius:2},
+      {label:'Fraud',data:mo.map(d=>d.fraud_n),borderColor:'rgba(255,107,74,.9)',backgroundColor:'transparent',fill:false,tension:.35,pointRadius:2,yAxisID:'y2'}
+    ]
+  },options:{...CD,plugins:{legend:{display:true,labels:{color:'#4e7099',boxWidth:9}}},
+    scales:{x:{...CD.scales.x},y:{...CD.scales.y},
+      y2:{position:'right',grid:{display:false},ticks:{color:'rgba(255,107,74,.7)',maxTicksLimit:5},
+          title:{display:true,text:'Fraud',color:'rgba(255,107,74,.6)',font:{size:8}}}}}});
+
+  // Hourly area
+  const hr=eda.hourly||[];
+  mkC('ch-hourly',{type:'bar',data:{
+    labels:hr.map(d=>d.hour_of_day),
+    datasets:[{data:hr.map(d=>+(d.fraud_rate*100).toFixed(3)),borderRadius:2,
+      backgroundColor:hr.map(d=>(d.hour_of_day>=23||d.hour_of_day<=4)?'rgba(255,107,74,.82)':'rgba(245,200,66,.45)')}]
+  },options:{...CD,plugins:{legend:{display:false},tooltip:{callbacks:{label:v=>v.raw+'%'}}},
+    scales:{x:{...CD.scales.x,title:{display:true,text:'Hour',color:'#4e7099',font:{size:8}}},
+      y:{...CD.scales.y,ticks:{...CD.scales.y.ticks,callback:v=>v+'%'}}}}});
+}
+
+// ── EDA CHARTS ─────────────────────────────────────────────
+function renderEda(){
+  if(!edaData)return;
+  const cd=edaData.class_dist||{};
+
+  // Class dist
+  mkC('ch-class',{type:'bar',data:{
+    labels:['Legitimate','Fraud'],
+    datasets:[{data:[cd.legit||73707,cd.fraud||1293],
+      backgroundColor:['rgba(96,184,232,.7)','rgba(255,107,74,.8)'],borderRadius:4}]
+  },options:{...CD,plugins:{legend:{display:false}},
+    scales:{x:{...CD.scales.x},y:{...CD.scales.y,ticks:{callback:v=>fmt(v)}}}}});
+
+  // Location polar
+  const loc=edaData.location||[];
+  mkC('ch-loc',{type:'bar',data:{
+    labels:loc.map(d=>d.location_match),
+    datasets:[{data:loc.map(d=>+(d.fraud_rate*100).toFixed(2)),borderRadius:3,
+      backgroundColor:['rgba(255,107,74,.8)','rgba(245,200,66,.75)','rgba(96,184,232,.65)','rgba(78,203,141,.65)']}]
+  },options:{...CD,plugins:{legend:{display:false},tooltip:{callbacks:{label:v=>v.raw+'%'}}},
+    scales:{x:{...CD.scales.x},y:{...CD.scales.y,ticks:{callback:v=>v+'%'}}}}});
+
+  // Hourly EDA
+  const hr=edaData.hourly||[];
+  mkC('ch-hour-eda',{type:'bar',data:{
+    labels:hr.map(d=>d.hour_of_day),
+    datasets:[{data:hr.map(d=>+(d.fraud_rate*100).toFixed(3)),borderRadius:2,
+      backgroundColor:hr.map(d=>(d.hour_of_day>=23||d.hour_of_day<=4)?'rgba(255,107,74,.85)':'rgba(245,200,66,.45)')}]
+  },options:{...CD,plugins:{legend:{display:false},tooltip:{callbacks:{label:v=>v.raw+'%'}}},
+    scales:{x:{...CD.scales.x,title:{display:true,text:'Hour',color:'#4e7099',font:{size:8}}},
+      y:{...CD.scales.y,ticks:{callback:v=>v+'%'}}}}});
+
+  // Merchant EDA
+  const me=[...edaData.merchant||[]].reverse();
+  mkC('ch-merch-eda',{type:'bar',data:{
+    labels:me.map(d=>d.merchant_category),
+    datasets:[{data:me.map(d=>+(d.fraud_rate*100).toFixed(2)),borderRadius:3,
+      backgroundColor:me.map(d=>d.fraud_rate>0.05?'rgba(255,107,74,.82)':d.fraud_rate>0.02?'rgba(245,200,66,.75)':'rgba(78,203,141,.6)')}]
+  },options:{...CD,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:v=>v.raw+'%'}}},
+    scales:{x:{...CD.scales.x,ticks:{callback:v=>v+'%'}},y:{...CD.scales.y}}}});
+
+  // Amounts stacked
+  const ad=edaData.amount_dist||[];
+  const lbls=[...new Set(ad.map(d=>String(d.amt_bin)))];
+  const isF=d=>Number(d.is_fraud)===1;
+  const amtF=lbls.map(l=>{const r=ad.find(d=>String(d.amt_bin)===l&&isF(d));return r?r.count:0;});
+  const amtL=lbls.map(l=>{const r=ad.find(d=>String(d.amt_bin)===l&&!isF(d));return r?r.count:0;});
+  mkC('ch-amounts',{type:'bar',data:{
+    labels:lbls,
+    datasets:[
+      {label:'Legitimate',data:amtL,backgroundColor:'rgba(96,184,232,.65)',borderRadius:3},
+      {label:'Fraud',data:amtF,backgroundColor:'rgba(255,107,74,.8)',borderRadius:3}
+    ]
+  },options:{...CD,plugins:{legend:{display:true,labels:{color:'#4e7099',boxWidth:9}}},
+    scales:{x:{...CD.scales.x},y:{...CD.scales.y,ticks:{callback:v=>fmt(v)}}}}});
+}
+
+// ── MODEL CHARTS ───────────────────────────────────────────
+function renderModels(){
+  if(!modelData||!modelData.roc_curves)return;
+
+  // Leaderboard
+  const comp=modelData.model_comparison||{};
+  const sorted=Object.entries(comp).sort((a,b)=>b[1].auc-a[1].auc);
+  const rankCls=['g','s','b','d'];
+  $('leaderboard').innerHTML=sorted.map(([nm,m],i)=>`
+    <div class="lb-item">
+      <div class="lb-rank ${rankCls[i]||'d'}">${i+1}</div>
+      <div style="flex:1">
+        <div class="lb-name">${nm}</div>
+        <div class="lb-metrics">P:${m.precision} · R:${m.recall} · F1:${m.f1}</div>
+      </div>
+      <div class="lb-auc">${m.auc}</div>
+    </div>`).join('');
+
+  // ROC
+  const rocD=modelData.roc_curves;
+  const ds=Object.entries(rocD).map(([nm,d])=>({
+    label:`${nm} (${d.auc})`,
+    data:d.fpr.map((x,i)=>({x,y:d.tpr[i]})),
+    borderColor:d.colour,borderWidth:2,pointRadius:0,fill:false,showLine:true
+  }));
+  ds.unshift({label:'Chance',data:[{x:0,y:0},{x:1,y:1}],borderColor:'rgba(26,46,72,.9)',borderWidth:1,borderDash:[4,4],pointRadius:0,fill:false,showLine:true});
+  mkC('ch-roc',{type:'scatter',data:{datasets:ds},options:{
+    responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{type:'linear',min:0,max:1,grid:{color:GC},title:{display:true,text:'False Positive Rate',color:'#8c7b68',font:{size:9}},ticks:{color:'#8c7b68'}},
+      y:{type:'linear',min:0,max:1,grid:{color:GC},title:{display:true,text:'True Positive Rate',color:'#8c7b68',font:{size:9}},ticks:{color:'#8c7b68'}}
+    }
+  }});
+  $('roc-legend').innerHTML=Object.entries(rocD).map(([nm,d])=>
+    `<div class="rl-item"><div class="rl-line" style="background:${d.colour}"></div>${nm} (${d.auc})</div>`).join('');
+
+  // Feature importance
+  const fi=modelData.feature_importance||[];
+  const mx=Math.max(...fi.map(f=>f.importance));
+  const eng=['log_amount','composite_risk','merchant_risk','vel_dist','location_risk',
+    'risk_flags','trust_score','amount_zscore','is_night','is_high_risk_combo',
+    'is_new_account','is_round_amount','recency_risk','hour_sin','hour_cos'];
+  $('fi-list').innerHTML=fi.map(f=>{
+    const isE=eng.includes(f.feature);
+    return `<div class="pb-wrap">
+      <div class="pb-row">
+        <span class="pb-name" style="color:${isE?'var(--gold)':'var(--text2)'}">${f.feature}${isE?'<span style="font-size:7px;margin-left:3px;color:var(--gold)">✦ ENG</span>':''}</span>
+        <span class="pb-val">${f.importance.toFixed(1)}</span>
+      </div>
+      <div class="pb-track"><div class="pb-fill" style="width:${(f.importance/mx*100).toFixed(1)}%;background:${isE?'linear-gradient(90deg,var(--gold),var(--gold2))':'var(--bg4)'}"></div></div>
+    </div>`;}).join('');
+
+  // Risk score distribution
+  // Server sends pre-binned histogram (0.2KB not 12KB raw points)
+  const rsd=modelData.risk_score_dist||{};
+  mkC('ch-rsd',{type:'bar',data:{
+    labels:rsd.labels||[],
+    datasets:[
+      {label:'Legitimate',data:rsd.legit||[],backgroundColor:'rgba(96,184,232,.6)',borderRadius:2},
+      {label:'Fraud',data:rsd.fraud||[],backgroundColor:'rgba(255,107,74,.8)',borderRadius:2}
+    ]
+  },options:{...CD,plugins:{legend:{display:true,labels:{color:'#8c7b68',boxWidth:9}}},
+    scales:{x:{...CD.scales.x,ticks:{...CD.scales.x.ticks,maxRotation:45}},
+            y:{...CD.scales.y,ticks:{callback:v=>fmt(v)}}}}});
+}
+
+// ── LIVE FEED ──────────────────────────────────────────────
+function startFeed(){
+  if(feedInterval)return;
+  fetchBatch();
+  feedInterval=setInterval(fetchBatch,4000);
+}
+
+async function fetchBatch(){
+  try{
+    const txns=await fetch('/api/live-feed?n=4').then(r=>r.json());
+    const feedEl=$('feed-list'), alertEl=$('alert-list');
+    const frag=document.createDocumentFragment();
+
+    txns.forEach(tx=>{
+      sTotal++;
+      const sc=tx.risk_tier==='HIGH_RISK'?'h':tx.risk_tier==='REVIEW'?'r':'l';
+      const d=document.createElement('div');
+      d.className='feed-item';
+      d.innerHTML=`<div class="fi-icon">${tx.icon}</div>
+        <div class="fi-info"><div class="fi-txn">${tx.transaction_id}</div>
+        <div class="fi-meta">${tx.merchant_category} · ${tx.location_match} · ${tx.timestamp}</div></div>
+        <div class="fi-score ${sc}">${tx.risk_score}</div>
+        <div class="fi-amt">${fmtGbp(tx.amount_gbp)}</div>`;
+      frag.appendChild(d);
+
+      if(tx.risk_tier==='HIGH_RISK'){
+        sAlerts++;
+        const a=document.createElement('div');
+        a.className='alert-card';
+        a.innerHTML=`<div class="ac-hdr"><span class="ac-id">⚠ ${tx.transaction_id}</span><span class="ac-amt">${fmtGbp(tx.amount_gbp)}</span></div>
+          <div class="ac-signals">${tx.merchant_category} · ${tx.location_match} · Score: ${tx.risk_score}/100 · ${tx.timestamp}</div>`;
+        alertEl.insertBefore(a,alertEl.firstChild);
+        if(alertEl.children.length>8)alertEl.removeChild(alertEl.lastChild);
+        notify('⚠ HIGH RISK',`${tx.transaction_id} — ${fmtGbp(tx.amount_gbp)} · Score ${tx.risk_score}`,'nh');
+      }else if(tx.risk_tier==='REVIEW'){sReview++;}
+    });
+
+    feedEl.insertBefore(frag,feedEl.firstChild);
+    while(feedEl.children.length>18)feedEl.removeChild(feedEl.lastChild);
+    $('s-alerts').textContent=fmt(sAlerts);
+    $('s-review').textContent=fmt(sReview);
+    $('s-total').textContent=fmt(sTotal);
+    $('feed-count').textContent=`${fmt(sTotal)} transactions processed this session`;
+  }catch(e){}
+}
+
+// ── SCORE ──────────────────────────────────────────────────
+async function doScore(){
+  if(!isReady){notify('Not ready','Model still training','nh');return;}
+  const tx={
+    amount_gbp:        parseFloat($('sf-amt').value)||100,
+    hour_of_day:       parseInt($('sf-hour').value)||12,
+    merchant_category: $('sf-merch').value,
+    location_match:    $('sf-loc').value,
+    velocity_1hr:      parseInt($('sf-vel').value)||1,
+    distance_from_home_km:parseFloat($('sf-dist').value)||10,
+    card_present:      parseInt($('sf-card').value),
+    device_match:      parseInt($('sf-dev').value),
+    ip_country_match:  parseInt($('sf-ip').value),
+    prev_fraud_flag:   parseInt($('sf-pf').value),
+    account_age_months:parseInt($('sf-acct').value)||24,
+    days_since_last_txn:parseInt($('sf-days').value)||5,
+    transaction_id:'TXN-MANUAL-'+Date.now()
+  };
+  const r=await fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(tx)}).then(r=>r.json());
+  showScore(tx,r);
+  // Fetch narrative async
+  const key=$('sf-key').value.trim();
+  const txN={...tx,risk_score:r.risk_score,risk_tier:r.risk_tier};
+  const n=await fetch('/api/llm-narrative',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({transaction:txN,signals:r.signals,api_key:key})}).then(r=>r.json());
+  const nb=$('sc-narr');
+  nb.textContent=n.narrative; nb.style.display='block';
+  $('sc-nsrc').textContent='— '+n.source;
+}
+
+function showScore(tx,r){
+  $('sc-idle').style.display='none';
+  const el=$('sc-result');
+  el.classList.add('show');
+  const col=r.risk_tier==='HIGH_RISK'?'var(--coral)':r.risk_tier==='REVIEW'?'var(--gold)':'var(--sage)';
+  const num=$('sc-num'); num.textContent=r.risk_score; num.style.color=col;
+  $('sc-tier').innerHTML=`<span class="tier ${r.risk_tier}">${r.risk_tier}</span>`;
+  $('sc-prob').textContent=(r.fraud_prob*100).toFixed(1)+'%';
+  $('sc-comp').textContent=r.composite_risk||'—';
+  $('sc-mr').textContent=(r.merchant_risk||'—')+'/5';
+  $('sc-signals').innerHTML='<div style="font-size:8px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;font-family:var(--mono);margin-bottom:5px;margin-top:10px">Risk Signals</div>'+
+    (r.signals||[]).map(s=>`<div class="sig-item">${s}</div>`).join('');
+  $('sc-narr').style.display='none';
+}
+
+function loadHigh(){
+  $('sf-amt').value='4820'; $('sf-hour').value='2'; $('sf-merch').value='crypto_exchange';
+  $('sf-loc').value='international'; $('sf-vel').value='5'; $('sf-dist').value='850';
+  $('sf-card').value='0'; $('sf-dev').value='0'; $('sf-ip').value='0';
+  $('sf-pf').value='1'; $('sf-acct').value='2';
+}
+function loadLow(){
+  $('sf-amt').value='35'; $('sf-hour').value='11'; $('sf-merch').value='grocery';
+  $('sf-loc').value='home_city'; $('sf-vel').value='1'; $('sf-dist').value='2';
+  $('sf-card').value='1'; $('sf-dev').value='1'; $('sf-ip').value='1';
+  $('sf-pf').value='0'; $('sf-acct').value='60';
+}
+
+// ── SEARCH ─────────────────────────────────────────────────
+let _st;
+function doSearch(){clearTimeout(_st);_st=setTimeout(_search,280);}
+async function _search(){
+  const q=$('txn-q').value.trim();
+  const tier=$('txn-tier').value;
+  try{
+    const d=await fetch(`/api/search?q=${encodeURIComponent(q)}&tier=${tier}&page=${txPage}&per=25`).then(r=>r.json());
+    $('txn-count').textContent=`${fmt(d.total)} results`;
+    const tot=Math.ceil(d.total/25);
+    $('pg-info').textContent=`Page ${d.page} of ${tot||1}`;
+    $('pg-prev').disabled=d.page<=1; $('pg-next').disabled=d.page>=tot;
+    $('txn-body').innerHTML=(d.data||[]).map(tx=>`<tr>
+      <td style="color:var(--gold);font-family:var(--mono)">${tx.transaction_id}</td>
+      <td style="font-family:var(--mono)">${fmtGbp(tx.amount_gbp)}</td>
+      <td>${tx.merchant_category}</td>
+      <td>${tx.location_match}</td>
+      <td style="font-weight:700;font-family:var(--mono);color:${tx.risk_score>50?'var(--coral)':tx.risk_score>15?'var(--gold)':'var(--sage)'}">${tx.risk_score}</td>
+      <td><span class="tier ${tx.risk_tier}">${tx.risk_tier}</span></td>
+      <td style="font-family:var(--mono)">${(tx.fraud_prob*100).toFixed(1)}%</td>
+      <td style="color:${tx.is_fraud?'var(--coral)':'var(--sage)'}">${tx.is_fraud?'⚠ FRAUD':'✓ LEGIT'}</td>
+    </tr>`).join('');
+  }catch(e){}
+}
+function pgPrev(){if(txPage>1){txPage--;doSearch();}}
+function pgNext(){txPage++;doSearch();}
+
+// ── NOTIFICATIONS ──────────────────────────────────────────
+const _nq=[];
+function notify(title,body,cls='ns'){
+  if(cls==='nh'&&_nq.length>2)return;
+  const w=$('notifs');
+  const n=document.createElement('div');
+  n.className=`notif ${cls}`;
+  n.innerHTML=`<div class="notif-t">${title}</div><div class="notif-b">${body}</div>`;
+  w.insertBefore(n,w.firstChild);
+  _nq.push(n);
+  if(w.children.length>3)w.removeChild(w.lastChild);
+  setTimeout(()=>{n.style.opacity='0';setTimeout(()=>{n.remove();_nq.shift();},350);},4500);
+}
+
+// ── FEEDBACK ───────────────────────────────────────────────
+function fbToggle(){$('fb-panel').classList.toggle('open');}
+function setStars(n){
+  fbStars=n;
+  document.querySelectorAll('.star').forEach((s,i)=>s.classList.toggle('on',i<n));
+}
+async function fbSubmit(){
+  const data={name:$('fb-name').value||'Anonymous',role:$('fb-role').value,
+    rating:fbStars,category:$('fb-cat').value,message:$('fb-msg').value};
+  try{await fetch('/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});}catch(e){}
+  $('fb-fields').style.display='none';
+  $('fb-done').classList.add('show');
+  notify('Feedback received!','Thank you for your response.','ns');
+}
+function fbReset(){
+  $('fb-fields').style.display='';
+  $('fb-done').classList.remove('show');
+  $('fb-msg').value=''; $('fb-name').value=''; setStars(5);
+}
+
+// ── BOOT ───────────────────────────────────────────────────
+pollStatus();
+</script>
+</body>
+</html>
