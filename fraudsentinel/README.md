@@ -129,5 +129,10 @@ Without a key, rule-based fallback narratives are used automatically.
 *Actual values computed at runtime from live training.*
 
 ---
+## 🏗️ System Architecture
+
+<p align="center">
+  <img src="fraud_architecture_diagram.svg" width="800"/>
+</p>
 
 *FraudSentinel · Gauri Kshirsagar · MSc Data Science · University of Leicester · 2026*
