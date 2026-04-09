@@ -136,11 +136,11 @@ Without a key, rule-based fallback narratives are used automatically.
 
 ## 🔄 Data Pipeline
 
-![Data Pipeline](Images/data_pipeline.svg)
+![Data Pipeline](Images/fraud_data_pipeline_flow.svg)
 
 ## ⚙️ Model Serving Logic
 
-![Model Serving Logic](Images/model_serving_logic.svg)
+![Model Serving Logic](Images/fraud_model_serving_logic.svg)
 
 
 
